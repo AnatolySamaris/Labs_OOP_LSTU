@@ -3,23 +3,22 @@
 
 #endif //DECISIONS_CHESSTABLE_H
 
-#include <iostream>
-
-using namespace std;
+// ChessTable - задает шахматную доску с возможностью
+// добавлять фигуры вручную либо заполнять поле автоматически,
+// делать ходы и атаковать фигуры противника.
 
 class ChessTable
 {
 private:
     char field[8][8];
-
-    static int char_to_index(char letter);
-    static char fill_empty(int x, int y);
+    static int char_to_index(char letter); // Перевод буквы-координаты в индекс массива
+    static char fill_empty(int x, int y); // Заполняет пустое поле "+" или "-"
 
 public:
-    ChessTable();
-    void add_figure(char figure, char y, int x);
+    ChessTable(); // Конструктор класса. Заполняем поле "+" и "-"
+    void add_piece(char piece, char y, int x);
     void move(char y_old, int x_old, char y_new, int x_new);
-    void help();
+    static void help();
     void show();
     void autofill();
     void clear();
