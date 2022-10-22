@@ -1,92 +1,128 @@
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
-// Базовый абстрактный класс, являющийся интерфейсом для производных классов,
-// определяющих различные вектор-функции (ниже - MyFunction).
-class VectorFunction
-{
-    // Интерфейс рассчитан на вектор-функции размера 2,
-    // поэтому в protected принимаются два набора коэффициентов,
-    // причем первая функция имеет 3 к-та, вторая - 2.
+// Базовый класс вектор-функция.
+// Поля functions, coefs, answer занесены в область видимости protected,
+// чтобы классы-наследники могли унаследовать их.
+class VectorFunction {
 protected:
-    double coefs_one[3];
-    double coefs_two[2];
-    double answer[2];
+    // Вектор идентификаторов функций (здесь - 1 или 2), соответствующих функциям варианта 16
+    vector<int> functions;
+    // Вектор векторов коэффициентов соответствующих им функций. Каждый вектор - это набор коэффициентов функции под тем же индексом, что и функция в functions
+    vector<vector<double>> coefs;
+    // Вектор результатов функций-членов вектор-функции. Индекс результата соответствует индексу функции в functions
+    vector<double> answer;
 
 public:
-    virtual void set_coefs_one(double *coefs) = 0; // Задать к-ты для первой функции
-    virtual void set_coefs_two(double *coefs) = 0; // Задать к-ты для второй функции
-    virtual void calculate(double x) = 0; // Посчитать значение вектор-функции от аргумента х
+    virtual void add(int id, vector<double> coefficients) = 0; // Добавление функции в вектор-функцию по идентификатору и присвоение ей коэффициентов
+    virtual void calculate(double x) = 0; // Поэлементное вычисление вектор-функции от аргумента х
 
-    double get_ans(int i) // вывести i-тый (начиная с 1) элемент вектор-функции
+    vector<double> get_ans() // Возвращает результирующий вектор.
     {
-        return this->answer[i-1];
+        return this->answer;
     }
 };
 
-
-class MyFunction: public VectorFunction // Наследование методов и свойств из класса VectorFunction
+class Function: public VectorFunction // Наследование методов и свойств из класса VectorFunction
 {
 public:
-    void set_coefs_one(double *coefs) override // Задать к-ты для первой функции. Передается массив
+    void add(int id, vector<double> func_coefs) override // Определение чисто виртуального метода add
     {
-        for (int i = 0; i < 3; i++)
+        if (id == 1)
         {
-            this->coefs_one[i] = coefs[i];
+            vector<double> new_coefs {func_coefs[0], func_coefs[1]};
+            this->functions.push_back(1); // Добавление идентификатора функции в вектор идентификаторов объекта класса Function
+            this->coefs.push_back(new_coefs); // Добавление коэффициентов функции в вектор коэффициентов объекта класса Function
+        }
+        else // id == 2
+        {
+            vector<double> new_coefs {func_coefs[0], func_coefs[1], func_coefs[2]};
+            this->functions.push_back(2);
+            this->coefs.push_back(new_coefs);
         }
     }
 
-    void set_coefs_two(double *coefs) override // Задать к-ты для второй функции. Передается массив
-    {
-        for (int i = 0; i < 2; i++)
-        {
-            this->coefs_two[i] = coefs[i];
-        }
-    }
-
-    // Результаты вычислений записываются в результирующий вектор,
-    // определенный в интерфейсе через массив длины 2.
-    // При помощи унаследованного метода get_ans(int i) можно затем
-    // обратиться к любому из элементов результирующего вектора.
     void calculate(double x) override
     {
-        this->answer[0] = this->coefs_one[0] * cos(x * this->coefs_one[1]) + this->coefs_one[2];
-        this->answer[1] = this->coefs_two[0] * pow(x, this->coefs_two[1]);
+        this->answer.clear(); // Если функция принимает аргумент не впервые, очищает прошлый результат
+
+        for (int i = 0; i < this->functions.size(); i++) // Поэлементное вычисление вектор-функции от аргумента х по идентификаторам и коэффициентам её элементов
+        {
+            if (this->functions[i] == 1) this->answer.push_back(this->coefs[i][0] / x + this->coefs[i][1]);
+            else this->answer.push_back(this->coefs[i][0] * log10(this->coefs[i][1] * x) + this->coefs[i][2]);
+        }
+    }
+
+    void show_func() // Вывод заданных элементов вектор-функции
+    {
+        for (int i = 0; i < this->functions.size(); i++)
+        {
+            if (this->functions[i] == 1)
+            {
+                cout << this->coefs[i][0] << " / " << 'x' << " + " << this->coefs[i][1] << endl;
+            }
+            else // id == 2
+            {
+                cout << this->coefs[i][0] << " * lg(" << this->coefs[i][1] << " * x) + " << this->coefs[i][2] << endl;
+            }
+        }
     }
 };
 
 int main()
 {
-    MyFunction vf = MyFunction(); // Создаем объект класса MyFunction. Создание вектор-функции
+    Function vf = Function(); // Создание объекта класса Function
 
-    // Определяем коэффициенты первой и второй функции созданной вектор-функции
-    double coefs1[3], coefs2[2];
-    cout << "Enter coefficients a, b, c for the first function:\n";
-    cin >> coefs1[0] >> coefs1[1] >> coefs1[2];
-    vf.set_coefs_one(coefs1);
+    cout << "Enter a vector-function size:";
+    int size; cin >> size;
 
-    cout << "Enter coefficients a, b for the second function:\n";
-    cin >> coefs2[0] >> coefs2[1];
-    vf.set_coefs_two(coefs2);
-
-    // Получаем массив аргументов
-    int x_size;
-    cout << "Enter amount of x values:\n";
-    cin >> x_size;
-    double x_values[x_size];
-    cout << "Enter x-values. If their amount is more than 1, separate them with space:\n";
-    for (int i = 0; i < x_size; i++)
+    cout << "There are two available functions:\n1. a / x + b\t 2. a * lg(b * x) + c" << endl;
+    for (int i = 0; i < size; i++)
     {
-        cin >> x_values[i];
+        cout << "Enter member-function id and its coefficients separated by space" << endl;
+        // Ввод разделен на две части: ввод id и ввод коэффициентов, но пользователю это разделение не заметно
+        int id; cin >> id;
+        if (id == 1)
+        {
+            vector<double> coefficients(2);
+            cin >> coefficients[0] >> coefficients[1];
+            vf.add(1, coefficients);
+        }
+        else if (id == 2)
+        {
+            vector<double> coefficients(3);
+            cin >> coefficients[0] >> coefficients[1] >> coefficients[2];
+            vf.add(2, coefficients);
+        }
+        else
+        {
+            // Если пользователь допустил ошибку, добавляем еще одну итерацию для корректного ввода
+            cout << "Wrong function id! Can be only 1 or 2. Try again." << endl;
+            size++;
+        }
     }
 
-    // Вычисляем результат для каждого аргумента и выводим в консоль поэлементно
-    for (int i = 0; i < x_size; i++)
+    cout << "\nNow your vector-function looks so:" << endl;
+    vf.show_func();
+
+    cout << "\nEnter an amount of x-values:";
+    int n; cin >> n;
+
+    // Вычисление и вывод результата вектор-функции от каждого введённого х
+    for (int i = 0; i < n; i++)
     {
-        vf.calculate(x_values[i]);
-        cout << "For x = " << x_values[i] << " vector-function is (" << vf.get_ans(1) << ' ' << vf.get_ans(2) << ");\n";
+        cout << "Enter x-value:";
+        double x; cin >> x;
+        vf.calculate(x);
+        cout << "For x = " << x << " result is ( ";
+        for (auto j: vf.get_ans())
+        {
+            cout << j << " ";
+        }
+        cout << ")\n";
     }
     return 0;
 }
